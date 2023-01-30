@@ -5,12 +5,99 @@ def prompt(string)
   puts "=> #{string}"
 end
 
+def prompt_name
+  prompt(MESSAGES['name'])
+  loop do
+    name = gets.chomp.capitalize
+    if name.empty?
+      prompt(MESSAGES['valid_name'])
+    else
+      return name
+    end
+  end
+end
+
+def display_name(name)
+  prompt("Hello " + name + "! We are going to collect some information" \
+  "from you to calculate your monthly loan payments. Let's get started!")
+  prompt("")
+end
+
 def valid_input?(num)
-  num.to_i != 0 || num.to_f != 0.0
+  num.to_i > 0 || num.to_f > 0.0
 end
 
 def valid_apr?(num)
-  num == '0' || num.to_f.to_s == num || num.to_i.to_s == num
+  num == '0' || num.to_f > 0.0 || num.to_i > 0
+end
+
+def prompt_loan_amount
+  prompt(MESSAGES['loan_amount'])
+  loop do
+    loan_amount = gets.chomp
+
+    if valid_input?(loan_amount)
+      return loan_amount.to_f
+    else
+      prompt(MESSAGES['invalid_entry'])
+    end
+  end
+end
+
+def prompt_loan_duration
+  prompt(MESSAGES['loan_duration'])
+  loop do
+    loan_duration = gets.chomp
+
+    if valid_input?(loan_duration)
+      return loan_duration.to_f
+    else
+      prompt(MESSAGES['invalid_entry'])
+    end
+  end
+end
+
+def prompt_loan_apr
+  prompt(MESSAGES['loan_apr'])
+  loop do
+    loan_apr = gets.chomp
+
+    if valid_apr?(loan_apr)
+      return loan_apr.to_f
+    else
+      prompt(MESSAGES['invalid_entry'])
+    end
+  end
+end
+
+def ready_to_calculate(name)
+  prompt("We're good to go " + name + "! Please wait while we calculate...")
+  prompt("")
+end
+
+def calculate_monthly_payment(loan_apr, loan_amount, loan_duration)
+  monthly_interest_rate = (loan_apr / 100) / 12
+  monthly_duration = loan_duration * 12
+
+  if monthly_interest_rate == 0.0
+    monthly_payment = loan_amount / monthly_duration
+  else
+    monthly_payment = loan_amount * (monthly_interest_rate / (
+      1 - (1 + monthly_interest_rate)**(-monthly_duration)))
+  end
+  format('%.2f', monthly_payment)
+end
+
+def display_monthly_payment(loan_amount, loan_apr, monthly_payment)
+  prompt("With a mortgage loan of $" + loan_amount.to_s + " and an APR of " +
+  loan_apr.to_s + "%, your monthly payment is $" + monthly_payment.to_s + ".")
+  prompt("")
+end
+
+def continue?
+  prompt(MESSAGES['repeat'])
+  repeat = gets.chomp.downcase
+  repeat.start_with?('y')
 end
 
 system('clear')
@@ -19,85 +106,28 @@ prompt(MESSAGES['welcome'])
 
 sleep(1.5)
 
-name = ''
-loop do
-  prompt(MESSAGES['name'])
-  name = gets.chomp.capitalize
-  if name.empty?
-    prompt(MESSAGES['valid_name'])
-  else
-    break
-  end
-end
-
-intro = <<-MSG
-  Hello #{name}! We are going to collect some information from you to calculate your monthly loan payments. Let's get started!
-MSG
-prompt(intro)
+name = prompt_name
+display_name(name)
 
 sleep(2.5)
 
 loop do
-  loan_amount = ''
-  loop do
-    prompt(MESSAGES['loan_amount'])
-    loan_amount = gets.chomp
+  loan_amount = prompt_loan_amount
+  loan_duration = prompt_loan_duration
+  loan_apr = prompt_loan_apr
 
-    if valid_input?(loan_amount)
-      break
-    else
-      prompt(MESSAGES['invalid_entry'])
-    end
-  end
-
-  loan_duration = ''
-  loop do
-    prompt(MESSAGES['loan_duration'])
-    loan_duration = gets.chomp
-
-    if valid_input?(loan_duration)
-      break
-    else
-      prompt(MESSAGES['invalid_entry'])
-    end
-  end
-
-  loan_apr = ''
-  loop do
-    prompt(MESSAGES['loan_apr'])
-    loan_apr = gets.chomp
-
-    if valid_apr?(loan_apr)
-      break
-    else
-      prompt(MESSAGES['invalid_entry'])
-    end
-  end
-
-  prompt("We're good to go #{name}! Please wait while we calculate...")
-  prompt("")
+  ready_to_calculate(name)
 
   sleep(2)
 
-  monthly_interest_rate = (loan_apr.to_f / 100) / 12
-  monthly_duration = loan_duration.to_f * 12
+  monthly_payment =
+    calculate_monthly_payment(loan_apr, loan_amount, loan_duration)
 
-  if monthly_interest_rate == 0.0
-    monthly_payment = loan_amount.to_f / monthly_duration
-  else
-    monthly_payment = loan_amount.to_f * (monthly_interest_rate / (
-      1 - (1 + monthly_interest_rate)**(-monthly_duration)))
-  end
-
-  prompt("With a mortgage loan of $#{loan_amount} and an APR of #{loan_apr}%,"\
-  " your monthly payment is $#{format('%.2f', monthly_payment)}.")
-  prompt("")
+  display_monthly_payment(loan_amount, loan_apr, monthly_payment)
 
   sleep(3.5)
 
-  prompt(MESSAGES['repeat'])
-  repeat = gets.chomp.downcase
-  break unless repeat.start_with?('y')
+  break unless continue?
 
   system('clear')
 end
